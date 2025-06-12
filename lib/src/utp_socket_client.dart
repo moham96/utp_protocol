@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:math';
 import 'package:logging/logging.dart';
+import 'package:utp_protocol/src/utp_socket_exceptions.dart';
 
 import 'utils.dart';
 import 'enums/utp_connection_state.dart';
@@ -110,10 +111,11 @@ class UTPSocketClient extends UTPCloseHandler with UTPSocketRecorder {
       var completer = _connectingSocketMap.remove(connId);
       processReceiveData(utp.socket, address, port, data, utp,
           onConnected: (socket) {
-            socket.closeHandler = this;
-            completer?.complete(socket);
-          },
-          onError: (socket, error) => completer?.completeError(error));
+        socket.closeHandler = this;
+        completer?.complete(socket);
+      }, onError: (socket, error) {
+        completer?.completeError(Exception(error));
+      });
     }
   }
 
@@ -140,7 +142,7 @@ class UTPSocketClient extends UTPCloseHandler with UTPSocketRecorder {
 
     _connectingSocketMap.forEach((key, c) {
       if (!c.isCompleted) {
-        c.completeError('Socket was disposed');
+        c.completeError(UtpSocketDisposedException());
       }
     });
     _connectingSocketMap.clear();
@@ -155,7 +157,7 @@ class UTPSocketClient extends UTPCloseHandler with UTPSocketRecorder {
 
     var completer = _connectingSocketMap.remove(socket.connectionId);
     if (completer != null && !completer.isCompleted) {
-      completer.completeError('Connect remote failed');
+      completer.completeError(UtpSocketTimeoutException());
     }
   }
 }

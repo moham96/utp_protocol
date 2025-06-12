@@ -5,6 +5,7 @@ import 'dart:math';
 import 'dart:typed_data';
 
 import 'package:logging/logging.dart';
+import 'package:utp_protocol/src/utp_socket_exceptions.dart';
 
 import 'utils.dart';
 import 'enums/utp_connection_state.dart';
@@ -325,7 +326,7 @@ class UTPSocketImpl extends UTPSocket {
     var c = Completer();
     stream.listen((event) {
       if (isClosed || isClosing) {
-        c.completeError('Socket was closed/closing , can not add event');
+        c.completeError(UtpSocketClosedException());
         return;
       }
       _receiveDataStreamController.add(Uint8List.fromList(event));

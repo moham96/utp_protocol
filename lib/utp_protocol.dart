@@ -6,3 +6,4 @@ export 'src/utp_server_impl.dart';
 export 'src/utp_socket_impl.dart';
 export 'src/base/utp_socket.dart';
 export 'src/utp_socket_client.dart';
+export 'src/utp_socket_exceptions.dart';
