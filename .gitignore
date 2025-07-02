@@ -17,3 +17,4 @@ doc/api/
 
 *.iml
 pubspec_overrides.yaml
+coverage/
