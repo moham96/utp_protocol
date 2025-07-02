@@ -79,7 +79,7 @@ class ServerUTPSocketImpl extends ServerUTPSocket with UTPSocketRecorder {
   int? get port => _socket?.port;
 
   @override
-  Future<dynamic> close([dynamic reason]) async {
+  Future<void> close([dynamic reason]) async {
     if (isClosed) return;
     _closed = true;
     var l = <Future>[];
@@ -92,9 +92,10 @@ class ServerUTPSocketImpl extends ServerUTPSocket with UTPSocketRecorder {
 
     _socket?.close();
     _socket = null;
-    var re = await _sc?.close();
+    if (_sc != null && _sc!.hasListener) {
+      await _sc!.close();
+    }
     _sc = null;
-    return re;
   }
 
   @override
