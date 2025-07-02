@@ -131,8 +131,7 @@ class UTPSocketClient extends UTPCloseHandler with UTPSocketRecorder {
   Future close([dynamic reason]) async {
     if (isClosed) return;
     _closed = true;
-    _rawSocket?.close();
-    _rawSocket = null;
+
     var f = <Future>[];
     indexMap.forEach((key, socket) {
       var r = socket.close();
@@ -146,7 +145,10 @@ class UTPSocketClient extends UTPCloseHandler with UTPSocketRecorder {
       }
     });
     _connectingSocketMap.clear();
-    return Stream.fromFutures(f).toList();
+    return Future.wait(f).then((_) {
+      _rawSocket?.close();
+      _rawSocket = null;
+    });
   }
 
   @override
