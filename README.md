@@ -2,6 +2,8 @@
 
 This library implements uTorrent Transport Protocol with pure Dart , no any other native library.
 
+[![codecov](https://codecov.io/gh/moham96/utp_protocol/branch/main/graph/badge.svg)](https://codecov.io/gh/moham96/utp_protocol)
+
 More uTP informations please take a look [BEP 0029](https://www.bittorrent.org/beps/bep_0029.html).
 
 # How to use
@@ -85,3 +87,25 @@ When invode the `close` method , the socket will send `ST_FIN` message to remote
 Actually , `destroy` method will send `ST_RESET` message to remote ,but it won't wait the ACK.
 
 *If socket close , it will wait for the expect ACK seq number, when the correct seq number received , the `close` method will completed future , or it will complete the future when timeout*
+
+## Testing
+
+Run tests:
+```bash
+dart test
+```
+
+Run tests with coverage:
+```bash
+dart test --coverage=coverage
+dart run coverage:format_coverage --lcov --in=coverage --out=coverage/lcov.info --packages=.dart_tool/package_config.json --report-on=lib
+```
+
+Or use the provided script:
+```bash
+dart tool/coverage.dart
+```
+
+The coverage report will be generated at `coverage/lcov.info` and can be viewed with tools like `genhtml` or uploaded to services like Codecov.
+
+Coverage is automatically uploaded to [Codecov](https://codecov.io) on every push and pull request via GitHub Actions.
