@@ -16,9 +16,9 @@ void main() {
       assert(header?.version == VERSION);
       assert(header?.sendTime == time & MAX_UINT32);
       assert(header?.timestampDifference == 2);
-      assert(header?.wnd_size == 3);
-      assert(header?.seq_nr == 4);
-      assert(header?.ack_nr == 5);
+      assert(header?.wndSize == 3);
+      assert(header?.seqNr == 4);
+      assert(header?.ackNr == 5);
     });
 
     test(' only header with extension create/parse', () {
@@ -30,9 +30,9 @@ void main() {
       assert(header?.version == VERSION);
       assert(header?.sendTime == time & MAX_UINT32);
       assert(header?.timestampDifference == 2);
-      assert(header?.wnd_size == 3);
-      assert(header?.seq_nr == 4);
-      assert(header?.ack_nr == 5);
+      assert(header?.wndSize == 3);
+      assert(header?.seqNr == 4);
+      assert(header?.ackNr == 5);
       assert(header?.offset == data.length);
     });
 
@@ -45,9 +45,9 @@ void main() {
       assert(header?.version == VERSION);
       assert(header?.sendTime == time & MAX_UINT32);
       assert(header?.timestampDifference == 2);
-      assert(header?.wnd_size == 3);
-      assert(header?.seq_nr == 4);
-      assert(header?.ack_nr == 5);
+      assert(header?.wndSize == 3);
+      assert(header?.seqNr == 4);
+      assert(header?.ackNr == 5);
       assert(header?.offset == data.length);
     });
 
@@ -75,9 +75,9 @@ void main() {
       assert(packet1?.version == VERSION);
       assert(packet1?.sendTime == packet.sendTime);
       assert(packet1?.timestampDifference == packet.timestampDifference);
-      assert(packet1?.wnd_size == packet.wnd_size);
-      assert(packet1?.seq_nr == packet.seq_nr);
-      assert(packet1?.ack_nr == packet.ack_nr);
+      assert(packet1?.wndSize == packet.wndSize);
+      assert(packet1?.seqNr == packet.seqNr);
+      assert(packet1?.ackNr == packet.ackNr);
 
       var ext1 = packet1?.extensionList[0] as SelectiveACK;
       var ackeds1 = ext1.getAckeds();

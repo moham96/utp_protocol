@@ -68,7 +68,7 @@ class UTPSocketImpl extends UTPSocket {
 
   int? _finalRemoteFINSeq;
 
-  Timer? _FINTimer;
+  Timer? _finTimer;
 
   /// The last packet remote acked.
   int? get lastRemoteAck => _lastRemoteAck;
@@ -202,7 +202,7 @@ class UTPSocketImpl extends UTPSocket {
           offset += remainSize;
         } else {
           _currentLocalSeq--;
-          _inflightPackets.remove(packet.seq_nr);
+          _inflightPackets.remove(packet.seqNr);
           _currentWindowSize -= packet.length;
         }
       } else {
@@ -213,7 +213,7 @@ class UTPSocketImpl extends UTPSocket {
           var packet = newDataPacket(payload);
           if (!sendPacket(packet)) {
             _currentLocalSeq--;
-            _inflightPackets.remove(packet.seq_nr);
+            _inflightPackets.remove(packet.seqNr);
             _currentWindowSize -= packet.length;
             break;
           }
@@ -631,25 +631,25 @@ class UTPSocketImpl extends UTPSocket {
     // cwnd = min(cwnd, max_allowed_cwnd);
     // cwnd = max(cwnd, 150);
 
-    var current_delay = currentDelay;
-    if (current_delay == 0 || minPacketRTT == null) return;
-    var our_delay = min(minPacketRTT!,
-        current_delay); // The delay will affect the increase in the window size, and obtaining delay in this way can lead to an aggressive increase in the window size.
-    // var our_delay = current_delay; // This method will be more moderate.
-    if (our_delay == 0) return;
+    var currentDelay = this.currentDelay;
+    if (currentDelay == 0 || minPacketRTT == null) return;
+    var ourDelay = min(minPacketRTT!,
+        currentDelay); // The delay will affect the increase in the window size, and obtaining delay in this way can lead to an aggressive increase in the window size.
+    // var ourDelay = currentDelay; // This method will be more moderate.
+    if (ourDelay == 0) return;
     // print(
-    //     'rtt : $minPacketRTT ,our delay : $queuing_delay , current delay: $current_delay');
-    var off_target1 = (CCONTROL_TARGET - our_delay) / CCONTROL_TARGET;
+    //     'rtt : $minPacketRTT ,our delay : $queuing_delay , current delay: $currentDelay');
+    var offTarget1 = (CCONTROL_TARGET - ourDelay) / CCONTROL_TARGET;
     //  The window size in the socket structure specifies the number of bytes we may have in flight (not acked) in total,
     //  on the connection. The send rate is directly correlated to this window size. The more bytes in flight, the faster
     //   send rate. In the code, the window size is called max_window. Its size is controlled, roughly, by the following expression:
-    var delay_factor = off_target1;
-    var window_factor = ackedSize / _allowWindowSize;
-    var scaled_gain =
-        MAX_CWND_INCREASE_PACKETS_PER_RTT * delay_factor * window_factor;
+    var delayFactor = offTarget1;
+    var windowFactor = ackedSize / _allowWindowSize;
+    var scaledGain =
+        MAX_CWND_INCREASE_PACKETS_PER_RTT * delayFactor * windowFactor;
     // Where the first factor scales the off_target to units of target delays.
-    // The scaled_gain is then added to the max_window:
-    _allowWindowSize += scaled_gain.toInt();
+    // The scaledGain is then added to the max_window:
+    _allowWindowSize += scaledGain.toInt();
     _packetSize = MAX_PACKET_SIZE;
   }
 
@@ -820,7 +820,7 @@ class UTPSocketImpl extends UTPSocket {
       for (var packet in _inflightPackets.values) {
         var passed = now - packet.sendTime;
         if (passed >= _rto) {
-          _resendPacket(packet.seq_nr, times);
+          _resendPacket(packet.seqNr, times);
         }
       }
       _rto *= 2; // double the timeout
@@ -845,14 +845,14 @@ class UTPSocketImpl extends UTPSocket {
       if (a < b) return -1;
       return 0;
     });
-    var len = _receivePacketBuffer.last.seq_nr - lastRemoteSeq;
+    var len = _receivePacketBuffer.last.seqNr - lastRemoteSeq;
     var c = len ~/ 32;
     var r = len.remainder(32);
     if (r != 0) c++;
     var payload = List<int>.filled(c * 32, 0);
     var selectiveAck = SelectiveACK(lastRemoteSeq, payload.length, payload);
     for (var packet in _receivePacketBuffer) {
-      selectiveAck.setAcked(packet.seq_nr);
+      selectiveAck.setAcked(packet.seqNr);
     }
     return selectiveAck;
   }
@@ -864,7 +864,7 @@ class UTPSocketImpl extends UTPSocket {
     if (isClosed) return;
     if (!isConnected && !isClosing) return;
     var packet = newAckPacket();
-    var ack = packet.ack_nr;
+    var ack = packet.ackNr;
     var keys = List<int>.from(_requestSendAckMap.keys);
     for (var i = 0; i < keys.length; i++) {
       var oldAck = keys[i];
@@ -880,7 +880,7 @@ class UTPSocketImpl extends UTPSocket {
     _requestSendAckMap[ack] = Timer(Duration.zero, () {
       _requestSendAckMap.remove(ack);
       if (!sendPacket(packet, 0, false, false) &&
-          packet.ack_nr == _finalRemoteFINSeq) {
+          packet.ackNr == _finalRemoteFINSeq) {
         // Re-sending is unnecessary for failed messages, unless it's the last FIN message
         Timer.run(() => requestSendAck());
       }
@@ -905,7 +905,7 @@ class UTPSocketImpl extends UTPSocket {
   /// These are all the ST_DATA messages received from the remote.
   void addReceivePacket(UTPPacket packet) {
     var expectSeq = (lastRemoteSeq + 1) & MAX_UINT16;
-    var seq = packet.seq_nr;
+    var seq = packet.seqNr;
     if (_finalRemoteFINSeq != null) {
       if (compareSeqLess(_finalRemoteFINSeq!, seq)) {
         // dev.log('Over FIN seq：$seq($_finalRemoteFINSeq)');
@@ -934,8 +934,8 @@ class UTPSocketImpl extends UTPSocket {
           return 0;
         });
         var nextPacket = _receivePacketBuffer.first;
-        while (nextPacket.seq_nr == ((lastRemoteSeq + 1) & MAX_UINT16)) {
-          lastRemoteSeq = nextPacket.seq_nr;
+        while (nextPacket.seqNr == ((lastRemoteSeq + 1) & MAX_UINT16)) {
+          lastRemoteSeq = nextPacket.seqNr;
           _throwDataToListener(nextPacket);
           _receivePacketBuffer.removeAt(0);
           if (_receivePacketBuffer.isEmpty) break;
@@ -952,7 +952,7 @@ class UTPSocketImpl extends UTPSocket {
         while (!s) {
           s = sendPacket(packet, 0, false, false);
         }
-        _FINTimer?.cancel();
+        _finTimer?.cancel();
         closeForce();
         return;
       } else {
@@ -992,7 +992,7 @@ class UTPSocketImpl extends UTPSocket {
       currentLocalSeq &= MAX_UINT16;
     }
     if (save && packet.type != ST_STATE) {
-      _inflightPackets[packet.seq_nr] = packet;
+      _inflightPackets[packet.seqNr] = packet;
     }
     int? lastAck;
     if (packet.type == ST_DATA ||
@@ -1036,7 +1036,7 @@ class UTPSocketImpl extends UTPSocket {
         UTPPacket(ST_FIN, sendId, 0, 0, 0, currentLocalSeq, lastRemoteSeq);
     _finSended = sendPacket(packet, 0, false, true);
     if (!_finSended) {
-      _inflightPackets.remove(packet.seq_nr);
+      _inflightPackets.remove(packet.seqNr);
       Timer.run(() => _requestSendData());
     }
     return;
@@ -1048,7 +1048,7 @@ class UTPSocketImpl extends UTPSocket {
       closeForce();
       return;
     }
-    _FINTimer = Timer(Duration(microseconds: _rto.floor()), () {
+    _finTimer = Timer(Duration(microseconds: _rto.floor()), () {
       _rto *= 2;
       _startCountDownFINData(++times);
     });
@@ -1070,8 +1070,8 @@ class UTPSocketImpl extends UTPSocket {
     connectionState = UTPConnectState.CLOSED;
     _closed = true;
 
-    _FINTimer?.cancel();
-    _FINTimer = null;
+    _finTimer?.cancel();
+    _finTimer = null;
     _receivePacketBuffer.clear();
 
     _addDataTimer?.cancel();

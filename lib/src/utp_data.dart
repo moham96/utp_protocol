@@ -52,13 +52,13 @@ class UTPPacket {
   /// This is a random, unique, number identifying all the packets that belong to the same connection.
   int connectionId;
 
-  int wnd_size;
+  int wndSize;
 
   /// This is the sequence number of this packet.
-  int seq_nr;
+  int seqNr;
 
   /// This is the sequence number the sender of the packet last received in the other direction.
-  int ack_nr;
+  int ackNr;
 
   int version;
 
@@ -93,14 +93,14 @@ class UTPPacket {
   int offset;
 
   UTPPacket(this.type, this.connectionId, this.sendTime,
-      this.timestampDifference, this.wnd_size, this.seq_nr, this.ack_nr,
+      this.timestampDifference, this.wndSize, this.seqNr, this.ackNr,
       {this.version = VERSION, this.payload, this.offset = 0}) {
     assert(type <= 15 && type >= 0, 'Bad type');
     assert(version <= 15 && version >= 0, 'Bad version');
     connectionId &= MAX_UINT16;
-    wnd_size &= MAX_UINT32;
-    seq_nr &= MAX_UINT16;
-    ack_nr &= MAX_UINT16;
+    wndSize &= MAX_UINT32;
+    seqNr &= MAX_UINT16;
+    ackNr &= MAX_UINT16;
   }
 
   void addExtension(Extension ext) {
@@ -127,13 +127,13 @@ class UTPPacket {
   Uint8List getBytes(
       {int? time, int? wndSize, int? timeDiff, int? seq, int? ack}) {
     sendTime = time ?? sendTime;
-    wnd_size = wndSize ?? wnd_size;
-    wnd_size &= MAX_UINT32;
+    this.wndSize = wndSize ?? this.wndSize;
+    this.wndSize &= MAX_UINT32;
     timestampDifference = timeDiff ?? timestampDifference;
-    seq_nr = seq ?? seq_nr;
-    seq_nr &= MAX_UINT16;
-    ack_nr = ack ?? ack_nr;
-    ack_nr &= MAX_UINT16;
+    seqNr = seq ?? seqNr;
+    seqNr &= MAX_UINT16;
+    ackNr = ack ?? ackNr;
+    ackNr &= MAX_UINT16;
 
     if (_bytes == null) {
       var p = payload;
@@ -142,33 +142,33 @@ class UTPPacket {
         List.copyRange(p, 0, payload!, offset);
       }
       _bytes = _createData(type, connectionId, sendTime, timestampDifference,
-          wnd_size, seq_nr, ack_nr,
+          this.wndSize, seqNr, ackNr,
           payload: p, extensions: extensionList);
     } else {
       var view = ByteData.view(_bytes!.buffer);
       view.setUint32(4, sendTime & MAX_UINT32);
       view.setUint32(8, timestampDifference & MAX_UINT32);
-      view.setUint32(12, wnd_size);
-      view.setUint16(16, seq_nr);
-      view.setUint16(18, ack_nr);
+      view.setUint32(12, this.wndSize);
+      view.setUint16(16, seqNr);
+      view.setUint16(18, ackNr);
     }
     return _bytes!;
   }
 
   @override
-  int get hashCode => seq_nr.toString().hashCode;
+  int get hashCode => seqNr.toString().hashCode;
 
   @override
   bool operator ==(other) {
     if (other is UTPPacket) {
-      return other.seq_nr == seq_nr;
+      return other.seqNr == seqNr;
     }
     return false;
   }
 
   bool operator <(b) {
     if (b is UTPPacket) {
-      return compareSeqLess(seq_nr, b.seq_nr);
+      return compareSeqLess(seqNr, b.seqNr);
     }
     throw 'Different type can not compare';
   }
@@ -249,14 +249,14 @@ class SelectiveACK extends Extension {
 }
 
 Uint8List _createData(int type, int connectionId, int timestamp,
-    int timestampDifference, int wnd_size, int seq_nr, int ack_nr,
+    int timestampDifference, int wndSize, int seqNr, int ackNr,
     {int version = VERSION, List<Extension>? extensions, List<int>? payload}) {
   assert(type <= 15 && type >= 0, 'Bad type');
   assert(version <= 15 && version >= 0, 'Bad version');
   connectionId &= MAX_UINT16;
-  ack_nr &= MAX_UINT16;
-  seq_nr &= MAX_UINT16;
-  wnd_size &= MAX_UINT32;
+  ackNr &= MAX_UINT16;
+  seqNr &= MAX_UINT16;
+  wndSize &= MAX_UINT32;
 
   Uint8List bytes;
   ByteData view;
@@ -294,9 +294,9 @@ Uint8List _createData(int type, int connectionId, int timestamp,
   view.setUint16(2, connectionId);
   view.setUint32(4, timestamp & MAX_UINT32);
   view.setUint32(8, timestampDifference & MAX_UINT32);
-  view.setUint32(12, wnd_size);
-  view.setUint16(16, seq_nr);
-  view.setUint16(18, ack_nr);
+  view.setUint32(12, wndSize);
+  view.setUint16(16, seqNr);
+  view.setUint16(18, ackNr);
   if (payloadLen > 0) {
     List.copyRange(bytes, payloadStart, payload!);
   }
@@ -362,12 +362,12 @@ int getNowTimestamp([int? offset]) {
 // considered smaller
 bool compareSeqLess(int left, int right) {
   // distance walking from lhs to rhs, downwards
-  var dist_down = (left - right) & MAX_UINT16;
+  var distDown = (left - right) & MAX_UINT16;
   // distance walking from lhs to rhs, upwards
-  var dist_up = (right - left) & MAX_UINT16;
+  var distUp = (right - left) & MAX_UINT16;
 
   // if the distance walking up is shorter, lhs
   // is less than rhs. If the distance walking down
   // is shorter, then rhs is less than lhs
-  return dist_up < dist_down;
+  return distUp < distDown;
 }

@@ -57,11 +57,11 @@ void _processResetMessage(UTPSocketImpl? socket) {
 /// Handle FIN messages
 void _processFINMessage(UTPSocketImpl? socket, UTPPacket packetData) async {
   if (socket == null || socket.isClosed || socket.isClosing) return;
-  socket.remoteFIN(packetData.seq_nr);
+  socket.remoteFIN(packetData.seqNr);
   socket.lastRemotePktTimestamp = packetData.sendTime;
-  socket.remoteWndSize = packetData.wnd_size;
+  socket.remoteWndSize = packetData.wndSize;
   socket.addReceivePacket(packetData);
-  socket.remoteAcked(packetData.ack_nr, packetData.timestampDifference, false);
+  socket.remoteAcked(packetData.ackNr, packetData.timestampDifference, false);
 }
 
 /// Handle incoming SYN messages.
@@ -89,8 +89,8 @@ void _processSYNMessage(UTPSocketImpl? socket, RawDatagramSocket? rawSocket,
         Random().nextInt(MAX_UINT16); // Random sequence number
     socket.connectionState =
         UTPConnectState.SYN_RECV; // Modify the connection state
-    socket.lastRemoteSeq = packetData.seq_nr;
-    socket.remoteWndSize = packetData.wnd_size;
+    socket.lastRemoteSeq = packetData.seqNr;
+    socket.remoteWndSize = packetData.wndSize;
     socket.lastRemotePktTimestamp = packetData.sendTime;
     var packet = socket.newAckPacket();
     socket.sendPacket(packet, 0, false, false);
@@ -143,20 +143,20 @@ void processDataMessage(UTPSocketImpl? socket, UTPPacket packetData,
   }
   var selectiveAcks = _readSelectiveAcks(packetData);
   if (socket.connectionState == UTPConnectState.SYN_RECV &&
-      (socket.currentLocalSeq - 1) & MAX_UINT16 == packetData.ack_nr) {
+      (socket.currentLocalSeq - 1) & MAX_UINT16 == packetData.ackNr) {
     socket.connectionState = UTPConnectState.CONNECTED;
     socket.startKeepAlive();
-    socket.remoteWndSize = packetData.wnd_size;
+    socket.remoteWndSize = packetData.wndSize;
     if (onConnected != null) onConnected(socket);
   }
   // After receiving data in the connected state, remove the header and emit the payload as an event.
   if (socket.isConnected || socket.isClosing) {
     socket.remoteWndSize =
-        packetData.wnd_size; // Update the window size of the peer.
+        packetData.wndSize; // Update the window size of the peer.
     socket.lastRemotePktTimestamp = packetData.sendTime;
     socket.addReceivePacket(packetData);
-    socket.remoteAcked(packetData.ack_nr, packetData.timestampDifference, false,
-        selectiveAcks);
+    socket.remoteAcked(
+        packetData.ackNr, packetData.timestampDifference, false, selectiveAcks);
 
     return;
   }
@@ -171,20 +171,20 @@ void processStateMessage(UTPSocketImpl? socket, UTPPacket packetData,
   if (socket == null) return;
   var selectiveAcks = _readSelectiveAcks(packetData);
   if (socket.connectionState == UTPConnectState.SYN_SENT &&
-      (socket.currentLocalSeq - 1) & MAX_UINT16 == packetData.ack_nr) {
+      (socket.currentLocalSeq - 1) & MAX_UINT16 == packetData.ackNr) {
     socket.connectionState = UTPConnectState.CONNECTED;
-    socket.lastRemoteSeq = packetData.seq_nr;
+    socket.lastRemoteSeq = packetData.seqNr;
     socket.lastRemoteSeq = socket.lastRemoteSeq - 1;
 
-    socket.remoteWndSize = packetData.wnd_size;
+    socket.remoteWndSize = packetData.wndSize;
     socket.startKeepAlive();
     if (onConnected != null) onConnected(socket);
   }
   if (socket.isConnected || socket.isClosing) {
     socket.remoteWndSize =
-        packetData.wnd_size; // Update the window size of the peer.
+        packetData.wndSize; // Update the window size of the peer.
     socket.lastRemotePktTimestamp = packetData.sendTime;
     socket.remoteAcked(
-        packetData.ack_nr, packetData.timestampDifference, true, selectiveAcks);
+        packetData.ackNr, packetData.timestampDifference, true, selectiveAcks);
   }
 }
