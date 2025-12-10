@@ -59,3 +59,13 @@
 ## 1.0.4
 - fix regressions
 - use logging package
+
+## 1.0.5
+- Improve socket error handling - throw exceptions on socket errors
+- Fix socket lifecycle management - only close raw sockets after socket close functions are called
+- Fix stream controller lifecycle - only close when it has listeners
+- Add comprehensive test coverage support
+- Add Codecov configuration and CI workflow
+- Add Dependabot configuration for automated dependency updates
+- Update README with testing instructions
+- Various linting and code style improvements
